@@ -4,23 +4,29 @@ import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import PilgrimDashboard from './components/Pilgrim/PilgrimDashboard';
 import OwnerDashboard from './components/Owner/OwnerDashboard';
+import RoomManagement from './components/Owner/RoomManagement';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import Navbar from './components/Common/Navbar';
 import { useAuth } from './context/AuthContext';
 
 function App() {
   const { isAuth, role } = useAuth();
+  console.log('App - Auth State:', { isAuth, role });
 
   return (
     <Router>
       <Navbar />
       <Routes>
+        <Route
+          path="/"
+          element={isAuth ? <Navigate to="/dashboard" /> : <Login />}
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route
           path="/pilgrim-dashboard"
           element={
-            <ProtectedRoute allowedRoles={['ROLE_PILIGRIM']}>
+            <ProtectedRoute allowedRoles={['ROLE_PILGRIM']}>
               <PilgrimDashboard />
             </ProtectedRoute>
           }
@@ -30,6 +36,14 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['ROLE_PG_OWNER']}>
               <OwnerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/owner-dashboard/pg/:pgId/rooms"
+          element={
+            <ProtectedRoute allowedRoles={['ROLE_PG_OWNER']}>
+              <RoomManagement />
             </ProtectedRoute>
           }
         />
@@ -52,7 +66,6 @@ function App() {
           }
         />
         <Route path="/unauthorized" element={<h2>Unauthorized Access</h2>} />
-        <Route path="/" element={<Login />} />
       </Routes>
     </Router>
   );

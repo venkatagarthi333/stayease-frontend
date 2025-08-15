@@ -1,31 +1,123 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Container, Row, Col, Form, Button, Card } from 'react-bootstrap';
+import { toast } from 'react-toastify';
+import  api  from '../../services/authService';
 
 const PilgrimDashboard = () => {
+  const [searchTerm, setSearchTerm] = useState('');
   const [hostels, setHostels] = useState([]);
+  const [selectedHostelId, setSelectedHostelId] = useState(null);
+  const [rooms, setRooms] = useState([]);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchHostels = async () => {
-      try {
-        const response = await axios.get('http://localhost:8080/api/hostels');  // Your backend endpoint
-        setHostels(response.data);
-      } catch (err) {
-        console.error('Error fetching hostels');
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.get(`/pilgrim/search?location=${searchTerm}`);
+      setHostels(response.data);
+    } catch (error) {
+      toast.error('Failed to search hostels');
+      console.error(error);
+    }
+  };
+
+  const handleViewRooms = async (hostelId) => {
+    try {
+      const response = await api.get(`/pilgrim/rooms/${hostelId}`);
+      setRooms(response.data);
+      setSelectedHostelId(hostelId);
+    } catch (error) {
+      toast.error('Failed to fetch rooms');
+      console.error(error);
+    }
+  };
+
+  const handleBookRoom = async (roomId) => {
+    try {
+      await api.post(`/pilgrim/book/${roomId}`);
+      toast.success('Room booked successfully');
+      setRooms([]); // Clear rooms after booking
+      // Optionally refresh PG list or rooms
+    } catch (error) {
+      if (error.response && error.response.status === 500 && error.message.includes('Duplicate entry')) {
+        toast.error('Failed to book room: Room is already booked or you have an existing booking.');
+      } else {
+        toast.error('Failed to book room');
       }
-    };
-    fetchHostels();
-  }, []);
+      console.error(error);
+    }
+  };
+  const handleCancelBooking = async () => {
+    try {
+      await api.delete('/pilgrim/cancel-booking');
+      toast.success('Booking cancelled successfully');
+      // Optionally refresh dashboard or clear states
+    } catch (error) {
+      toast.error('Failed to cancel booking: No active booking or error occurred');
+      console.error(error);
+    }
+  };
 
   return (
-    <div className="container mt-5">
+    <Container className="mt-5">
       <h2>Pilgrim Dashboard</h2>
-      <ul>
+      <Row className="mb-3">
+        <Col md={6}>
+          <Form onSubmit={handleSearch}>
+            <Form.Group className="mb-3">
+              <Form.Control
+                type="text"
+                placeholder="Search by area"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </Form.Group>
+            <Button variant="primary" type="submit">Search</Button>
+          </Form>
+        </Col>
+      </Row>
+      <Row>
         {hostels.map((hostel) => (
-          <li key={hostel.id}>{hostel.name} - {hostel.location}</li>
+          <Col md={4} key={hostel.id} className="mb-3">
+            <Card>
+              <Card.Body>
+                <Card.Title>{hostel.hostelName}</Card.Title>
+                <Card.Text>
+                  Location: {hostel.location}<br />
+                  Contact: {hostel.contactNumber}
+                </Card.Text>
+                <Button variant="info" onClick={() => handleViewRooms(hostel.id)}>View Rooms</Button>
+              </Card.Body>
+            </Card>
+          </Col>
         ))}
-      </ul>
-      {/* Add booking form or other features */}
-    </div>
+      </Row>
+      {rooms.length > 0 && (
+        <Row className="mt-3">
+          <h3>Rooms for Selected PG</h3>
+          {rooms.map((room) => (
+            <Col md={4} key={room.id} className="mb-3">
+              <Card>
+                <Card.Body>
+                  <Card.Title>Room {room.roomNumber}</Card.Title>
+                  <Card.Text>
+                    Capacity: {room.capacity}<br />
+                    Price: ${room.price}
+                  </Card.Text>
+                  <Button variant="success" onClick={() => handleBookRoom(room.id)}>Book</Button>
+                </Card.Body>
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      )}
+      <Row className="mb-3">
+        <Col md={6} className="text-end">
+          <Button variant="danger" onClick={handleCancelBooking}>Cancel Booking</Button> {/* Add this button */}
+        </Col>
+      </Row>
+    </Container>
   );
 };
 
