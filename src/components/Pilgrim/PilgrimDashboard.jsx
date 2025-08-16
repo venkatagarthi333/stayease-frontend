@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Form, Button, Card } from 'react-bootstrap';
+import { Container, Row, Col, Form, Button, Card, Modal } from 'react-bootstrap';
 import { toast } from 'react-toastify';
-import  api  from '../../services/authService';
+import api from '../../services/authService';
 
 const PilgrimDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [hostels, setHostels] = useState([]);
   const [selectedHostelId, setSelectedHostelId] = useState(null);
   const [rooms, setRooms] = useState([]);
+  const [showBookingDetails, setShowBookingDetails] = useState(false);
+  const [bookingDetails, setBookingDetails] = useState(null);
   const navigate = useNavigate();
 
   const handleSearch = async (e) => {
@@ -35,10 +37,10 @@ const PilgrimDashboard = () => {
 
   const handleBookRoom = async (roomId) => {
     try {
-      await api.post(`/pilgrim/book/${roomId}`);
-      toast.success('Room booked successfully');
-      setRooms([]); // Clear rooms after booking
-      // Optionally refresh PG list or rooms
+      const response = await api.post(`/pilgrim/book/${roomId}`);
+      setBookingDetails(response.data); // Updated to use pilgrimId
+      setShowBookingDetails(true);
+      setRooms([]);
     } catch (error) {
       if (error.response && error.response.status === 500 && error.message.includes('Duplicate entry')) {
         toast.error('Failed to book room: Room is already booked or you have an existing booking.');
@@ -48,11 +50,13 @@ const PilgrimDashboard = () => {
       console.error(error);
     }
   };
+
   const handleCancelBooking = async () => {
     try {
       await api.delete('/pilgrim/cancel-booking');
       toast.success('Booking cancelled successfully');
-      // Optionally refresh dashboard or clear states
+      setBookingDetails(null);
+      setShowBookingDetails(false);
     } catch (error) {
       toast.error('Failed to cancel booking: No active booking or error occurred');
       console.error(error);
@@ -75,6 +79,11 @@ const PilgrimDashboard = () => {
             </Form.Group>
             <Button variant="primary" type="submit">Search</Button>
           </Form>
+        </Col>
+        <Col md={6} className="text-end">
+          <Button variant="danger" onClick={handleCancelBooking} disabled={!bookingDetails}>
+            Cancel Booking
+          </Button>
         </Col>
       </Row>
       <Row>
@@ -112,11 +121,30 @@ const PilgrimDashboard = () => {
           ))}
         </Row>
       )}
-      <Row className="mb-3">
-        <Col md={6} className="text-end">
-          <Button variant="danger" onClick={handleCancelBooking}>Cancel Booking</Button> {/* Add this button */}
-        </Col>
-      </Row>
+
+      {/* Booking Details Modal */}
+      <Modal show={showBookingDetails} onHide={() => setShowBookingDetails(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Booking Details</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {bookingDetails && (
+            <>
+              <p><strong>Pilgrim ID:</strong> {bookingDetails.pilgrimId}</p>
+              <p><strong>Hostel Name:</strong> {bookingDetails.hostel.hostelName}</p>
+              <p><strong>Location:</strong> {bookingDetails.hostel.location}</p>
+              <p><strong>Contact:</strong> {bookingDetails.hostel.contactNumber}</p>
+              <p><strong>Room Number:</strong> {bookingDetails.room.roomNumber}</p>
+              <p><strong>Capacity:</strong> {bookingDetails.room.capacity}</p>
+              <p><strong>Price:</strong> ${bookingDetails.room.price}</p>
+              <p><strong>Pilgrim Email:</strong> {bookingDetails.pilgrimEmail}</p>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowBookingDetails(false)}>Close</Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };
