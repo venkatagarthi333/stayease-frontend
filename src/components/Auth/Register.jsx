@@ -6,7 +6,7 @@ import { setAuthToken } from '../../utils/auth';
 const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('ROLE_PILIGRIM');  // Default role
+  const [role, setRole] = useState('');  // Default role
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -37,8 +37,8 @@ const Register = () => {
         <div className="mb-3">
           <label>Role</label>
           <select className="form-control" value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="ROLE_PILIGRIM">Pilgrim</option>
-            <option value="ROLE_PG_OWNER">PG Owner</option>
+            <option value="ROLE_PILGRIM">ROLE_PILGRIM</option>
+            <option value="ROLE_PG_OWNER">ROLE_PG_OWNER</option>
           </select>
         </div>
         <button type="submit" className="btn btn-primary">Register</button>

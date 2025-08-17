@@ -111,7 +111,10 @@ const PilgrimDashboard = () => {
                 <Card.Body>
                   <Card.Title>Room {room.roomNumber}</Card.Title>
                   <Card.Text>
-                    Capacity: {room.capacity}<br />
+                    Room Type:{room.bedType}<br/>
+                    Capacity: {room.capacity}<br/>
+                    Available Beds:{room.availableBeds}<br/>
+
                     Price: ${room.price}
                   </Card.Text>
                   <Button variant="success" onClick={() => handleBookRoom(room.id)}>Book</Button>

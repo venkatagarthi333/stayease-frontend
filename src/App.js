@@ -8,6 +8,7 @@ import RoomManagement from './components/Owner/RoomManagement';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import Navbar from './components/Common/Navbar';
 import { useAuth } from './context/AuthContext';
+import Home from './components/Home'; // Import the new component
 
 function App() {
   const { isAuth, role } = useAuth();
@@ -17,12 +18,15 @@ function App() {
     <Router>
       <Navbar />
       <Routes>
+        <Route path="/" element={<Home />} /> {/* Default to Home for all users */}
         <Route
-          path="/"
+          path="/login"
           element={isAuth ? <Navigate to="/dashboard" /> : <Login />}
         />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route
+          path="/register"
+          element={isAuth ? <Navigate to="/dashboard" /> : <Register />}
+        />
         <Route
           path="/pilgrim-dashboard"
           element={
@@ -60,7 +64,7 @@ function App() {
                   <Navigate to="/unauthorized" />
                 )
               ) : (
-                <Navigate to="/login" />
+                <Navigate to="/" />
               )}
             </ProtectedRoute>
           }
