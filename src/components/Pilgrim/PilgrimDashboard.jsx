@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Form, Button, Card, Modal } from 'react-bootstrap';
 import { toast } from 'react-toastify';
@@ -11,7 +11,49 @@ const PilgrimDashboard = () => {
   const [rooms, setRooms] = useState([]);
   const [showBookingDetails, setShowBookingDetails] = useState(false);
   const [bookingDetails, setBookingDetails] = useState(null);
+  const [isLoading, setIsLoading] = useState(false); // Loading state
+  const [isInitialLoad, setIsInitialLoad] = useState(true); // Flag for initial load
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Fetch booking on initial load without triggering modal or toast
+    const fetchInitialBooking = async () => {
+      setIsLoading(true);
+      try {
+        const response = await api.get('/pilgrim/my-booking');
+        const data = response.data;
+        setBookingDetails(data);
+      } catch (error) {
+        console.error('Failed to fetch initial booking details:', error);
+        setBookingDetails(null);
+      } finally {
+        setIsLoading(false);
+        setIsInitialLoad(false); // Mark initial load as complete
+      }
+    };
+    fetchInitialBooking();
+  }, []); // Runs once on mount
+
+  const fetchMyBooking = useCallback(async () => {
+    if (isLoading) return; // Prevent multiple calls if already loading
+    setIsLoading(true);
+    try {
+      const response = await api.get('/pilgrim/my-booking');
+      const data = response.data;
+      setBookingDetails(data);
+      if (data && data.roomId) {
+        setShowBookingDetails(true); // Show modal only on manual click
+      } else {
+        toast.info('No active booking found.', { autoClose: 3000 }); // Toast only on manual click
+      }
+    } catch (error) {
+      toast.error('Failed to fetch booking details');
+      console.error(error);
+      setBookingDetails(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isLoading]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -38,9 +80,10 @@ const PilgrimDashboard = () => {
   const handleBookRoom = async (roomId) => {
     try {
       const response = await api.post(`/pilgrim/book/${roomId}`);
-      setBookingDetails(response.data); // Updated to use pilgrimId
+      setBookingDetails(response.data);
       setShowBookingDetails(true);
       setRooms([]);
+      fetchMyBooking(); // Refresh current booking
     } catch (error) {
       if (error.response && error.response.status === 500 && error.message.includes('Duplicate entry')) {
         toast.error('Failed to book room: Room is already booked or you have an existing booking.');
@@ -81,7 +124,19 @@ const PilgrimDashboard = () => {
           </Form>
         </Col>
         <Col md={6} className="text-end">
-          <Button variant="danger" onClick={handleCancelBooking} disabled={!bookingDetails}>
+          <Button
+            variant="info"
+            onClick={fetchMyBooking}
+            disabled={isLoading}
+            className="me-2"
+          >
+            View Booking
+          </Button>
+          <Button
+            variant="danger"
+            onClick={handleCancelBooking}
+            disabled={!bookingDetails || !bookingDetails.roomId || isLoading}
+          >
             Cancel Booking
           </Button>
         </Col>
@@ -114,7 +169,6 @@ const PilgrimDashboard = () => {
                     Room Type:{room.bedType}<br/>
                     Capacity: {room.capacity}<br/>
                     Available Beds:{room.availableBeds}<br/>
-
                     Price: ${room.price}
                   </Card.Text>
                   <Button variant="success" onClick={() => handleBookRoom(room.id)}>Book</Button>
@@ -131,17 +185,19 @@ const PilgrimDashboard = () => {
           <Modal.Title>Booking Details</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {bookingDetails && (
+          {bookingDetails && bookingDetails.roomId ? (
             <>
               <p><strong>Pilgrim ID:</strong> {bookingDetails.pilgrimId}</p>
-              <p><strong>Hostel Name:</strong> {bookingDetails.hostel.hostelName}</p>
-              <p><strong>Location:</strong> {bookingDetails.hostel.location}</p>
-              <p><strong>Contact:</strong> {bookingDetails.hostel.contactNumber}</p>
-              <p><strong>Room Number:</strong> {bookingDetails.room.roomNumber}</p>
-              <p><strong>Capacity:</strong> {bookingDetails.room.capacity}</p>
-              <p><strong>Price:</strong> ${bookingDetails.room.price}</p>
+              <p><strong>Hostel Name:</strong> {bookingDetails.hostelName}</p>
+              <p><strong>Location:</strong> {bookingDetails.location}</p>
+              <p><strong>Contact:</strong> {bookingDetails.contactNumber}</p>
+              <p><strong>Room Number:</strong> {bookingDetails.roomNumber}</p>
+              <p><strong>Capacity:</strong> {bookingDetails.capacity}</p>
+              <p><strong>Price:</strong> ${bookingDetails.price}</p>
               <p><strong>Pilgrim Email:</strong> {bookingDetails.pilgrimEmail}</p>
             </>
+          ) : (
+            <p>No active booking details available.</p>
           )}
         </Modal.Body>
         <Modal.Footer>

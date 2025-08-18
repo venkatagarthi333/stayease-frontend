@@ -6,7 +6,7 @@ import { setAuthToken } from '../../utils/auth';
 const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('');  // Default role
+  const [role, setRole] = useState('ROLE_PILGRIM');  // Default role
   const [error, setError] = useState('');
   const navigate = useNavigate();
 

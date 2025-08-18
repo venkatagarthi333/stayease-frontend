@@ -70,7 +70,7 @@ const RoomManagement = () => {
   // Fetch and display pilgrims for a room
   const handleViewPilgrims = async (roomNumber) => {
     try {
-      const response = await api.get(`/pg/rooms/pilgrims/${roomNumber}`);
+      const response = await api.get(`/pg/rooms/view-pilgrims/${roomNumber}`);
       setPilgrims(response.data);
       setShowPilgrimsModal(true);
     } catch (error) {

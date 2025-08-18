@@ -49,5 +49,5 @@ export const isAuthenticated = () => {
 export const logout = () => {
   setAuthToken(null);
   setRefreshToken(null);
-  window.location.href = '/login';
+  window.location.href = '/';
 };
